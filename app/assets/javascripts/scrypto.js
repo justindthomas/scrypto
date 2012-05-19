@@ -3,7 +3,7 @@
 (function( $ ) {
 	$.fn.scrypto = function() {"use strict"
 	
-		if(!(this instanceof scrypto))
+		if(!(this instanceof $.fn.scrypto))
 			throw new Error("Constructor called as a function")
 	
 		/**
