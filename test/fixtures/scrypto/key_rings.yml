@@ -1,0 +1,15 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/Fixtures.html
+
+one:
+  secured_decryption: MyText
+  encryption: MyText
+  secured_signing: MyText
+  verification: MyText
+  person_id: 1
+
+two:
+  secured_decryption: MyText
+  encryption: MyText
+  secured_signing: MyText
+  verification: MyText
+  person_id: 1

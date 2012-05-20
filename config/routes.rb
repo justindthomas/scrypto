@@ -1,3 +1,4 @@
-Rails.application.routes.draw do
-  resources :key_rings, :only => [:show, :create], :as => :key_rings
+Scrypto::Engine.routes.draw do
+  resources :key_rings
+
 end

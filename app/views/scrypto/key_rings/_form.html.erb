@@ -1,0 +1,37 @@
+<%= form_for(@key_ring) do |f| %>
+  <% if @key_ring.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(@key_ring.errors.count, "error") %> prohibited this key_ring from being saved:</h2>
+
+      <ul>
+      <% @key_ring.errors.full_messages.each do |msg| %>
+        <li><%= msg %></li>
+      <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= f.label :secured_decryption %><br />
+    <%= f.text_area :secured_decryption %>
+  </div>
+  <div class="field">
+    <%= f.label :encryption %><br />
+    <%= f.text_area :encryption %>
+  </div>
+  <div class="field">
+    <%= f.label :secured_signing %><br />
+    <%= f.text_area :secured_signing %>
+  </div>
+  <div class="field">
+    <%= f.label :verification %><br />
+    <%= f.text_area :verification %>
+  </div>
+  <div class="field">
+    <%= f.label :person_id %><br />
+    <%= f.number_field :person_id %>
+  </div>
+  <div class="actions">
+    <%= f.submit %>
+  </div>
+<% end %>

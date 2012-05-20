@@ -1,3 +1,4 @@
+require "scrypto/engine"
 require "active_support/dependencies"
 
 module Scrypto
@@ -8,5 +9,3 @@ module Scrypto
   end
     
 end
-
-require "scrypto/engine"
