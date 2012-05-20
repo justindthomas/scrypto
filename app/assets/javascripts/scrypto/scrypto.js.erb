@@ -11,8 +11,8 @@
 					"<input type='hidden' id='encryption' name='key_ring[encryption]' />" +
 					"<input type='hidden' id='secured_signing' name='key_ring[secured_signing]' />" +
 					"<input type='hidden' id='verification' name='key_ring[verification]' />" +
-					"<label for='scrypto-passphrase'>Passphrase</label>" +
-					"<input id='scrypto-passphrase' type='password' />" +
+					"<field><label for='scrypto-passphrase'>Passphrase</label>" +
+					"<input id='scrypto-passphrase' type='password' /></field>" +
 					"<a href='#' id='scrypto-generate-keys'>Generate Keys</a>" +
 				"</form>")
 			
@@ -28,6 +28,20 @@
 				
 				$("#scrypto-key-generator").submit()
 			})
+		})
+		
+		$(".scrypto-encrypt").each( function() {
+			var field = $(this)
+			
+			try {
+				field.parents("form").bind('submit', function(event) {
+					field.val(sjcl.encrypt("test", field.val()))
+					return true
+				})
+			} catch (e) {
+				console.log(e)
+				return false
+			}
 		})
 	})
 		

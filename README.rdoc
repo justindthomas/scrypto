@@ -7,3 +7,5 @@ To use this:
 3. Add "//= require scrypto/scrypto" to your application.js.
 4. To add the key generator to a page, just include an empty 'div' tag with a class of "scrypto-key-generator".
 5. The generated form will include a "person_id" tag; be sure to set that to a value that makes sense for your application.
+6. Install (and execute) the necessary migrations with "rake scrypto:install:migrations" (or use "railties:install:migrations").
+7. To encrypt a form field, specify "scrypto-encrypt" as a class for the target field and attach a string of comma-separated person_ids to the form as ".recipients"
