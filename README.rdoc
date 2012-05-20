@@ -1,3 +1,9 @@
 = Scrypto
 
-This project rocks and uses MIT-LICENSE.
+To use this:
+
+1. Specify it in your Gemfile.
+2. Mount it as 'mount Scrypto::Engine, :at => "/scrypto"' in your routes.rb.
+3. Add "//= require scrypto/scrypto" to your application.js.
+4. To add the key generator to a page, just include an empty 'div' tag with a class of "scrypto-key-generator".
+5. The generated form will include a "person_id" tag; be sure to set that to a value that makes sense for your application.
