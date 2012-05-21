@@ -6,7 +6,7 @@
 		$(".scrypto-key-generator").each( function() {
 			$(this).html("" + 
 				"<form id='scrypto-key-generator' action='/scrypto/key_rings' data-remote='true' method='post'>" +
-					"<input type='hidden' id='person_id' name='key_ring[person_id]' />" +
+					"<input type='hidden' id='owner_name' name='key_ring[owner_name]' />" +
 					"<input type='hidden' id='secured_decryption' name='key_ring[secured_decryption]' />" +
 					"<input type='hidden' id='encryption' name='key_ring[encryption]' />" +
 					"<input type='hidden' id='secured_signing' name='key_ring[secured_signing]' />" +
@@ -21,6 +21,7 @@
 				var k = crypto.generate_keys()
 				k = crypto.encrypt_keys($("#scrypto-passphrase").val(), k)
 				
+				$("#owner_name").val(window.owner)
 				$("#secured_decryption").val(Base64.encode(k.encryption.sec))
 				$("#encryption").val(Base64.encode(JSON.stringify(k.encryption.pub)))
 				$("#secured_signing").val(Base64.encode(k.signing.sec))
@@ -31,11 +32,19 @@
 		})
 		
 		$(".scrypto-encrypt").each( function() {
+			var crypto = new $.fn.scrypto
 			var field = $(this)
+			
+			var public_keys = {}
 			
 			try {
 				field.parents("form").bind('submit', function(event) {
-					field.val(sjcl.encrypt("test", field.val()))
+					if(!field.parents("form").recipients) {
+						return false
+					}
+					
+					var messages = crypto.prepare_messages(field.parents("form").recipients, field.parents("form").passphrase, [field.val()], field.parents("form").current_user_key_ring)
+
 					return true
 				})
 			} catch (e) {
@@ -170,7 +179,7 @@
 			var public_keys = {}
 			
 			$.ajax({
-				url : "/key_rings?person_ids=" + person_ids,
+				url : "/scrypto/key_rings?person_ids=" + person_ids,
 				async : false,
 				dataType : "json",
 				success : function(data) {

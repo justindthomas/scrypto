@@ -6,7 +6,7 @@
     <th>Encryption</th>
     <th>Secured signing</th>
     <th>Verification</th>
-    <th>Person</th>
+    <th>Owner</th>
     <th></th>
     <th></th>
     <th></th>
@@ -18,7 +18,7 @@
     <td><%= key_ring.encryption %></td>
     <td><%= key_ring.secured_signing %></td>
     <td><%= key_ring.verification %></td>
-    <td><%= key_ring.person_id %></td>
+    <td><%= key_ring.owner_id %></td>
     <td><%= link_to 'Show', key_ring %></td>
     <td><%= link_to 'Edit', edit_key_ring_path(key_ring) %></td>
     <td><%= link_to 'Destroy', key_ring, confirm: 'Are you sure?', method: :delete %></td>

@@ -5,7 +5,7 @@ class CreateScryptoKeyRings < ActiveRecord::Migration
       t.text :encryption
       t.text :secured_signing
       t.text :verification
-      t.integer :person_id
+      t.integer :owner_id
 
       t.timestamps
     end
