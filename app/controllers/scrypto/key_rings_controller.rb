@@ -10,6 +10,30 @@ module Scrypto
         format.json { render json: @key_rings }
       end
     end
+    
+    def public_keys
+      @key_rings = { }
+      
+      KeyRing.where(:owner_id => params[:owner_ids].split(',')).each do |key_ring|
+        @key_rings[key_ring.owner_id] = key_ring.encryption
+      end
+      
+      respond_to do |format|
+        format.json { render json: @key_rings }
+      end
+    end
+    
+    def verification_keys
+      @key_rings = { }
+      
+      KeyRing.where(:owner_id => params[:owner_ids].split(',')).each do |key_ring|
+        @key_rings[key_ring.owner_id] = key_ring.verification
+      end
+      
+      respond_to do |format|
+        format.json { render json: @key_rings }
+      end
+    end
   
     # GET /key_rings/1
     # GET /key_rings/1.json
@@ -45,11 +69,9 @@ module Scrypto
   
       respond_to do |format|
         if @key_ring.save
-          format.html { redirect_to @key_ring, notice: 'Key ring was successfully created.' }
-          format.json { render json: @key_ring, status: :created, location: @key_ring }
+          format.js { }
         else
-          format.html { render action: "new" }
-          format.json { render json: @key_ring.errors, status: :unprocessable_entity }
+          format.js { }
         end
       end
     end

@@ -6,6 +6,7 @@ class CreateScryptoKeyRings < ActiveRecord::Migration
       t.text :secured_signing
       t.text :verification
       t.integer :owner_id
+      t.string :owner_type
 
       t.timestamps
     end
