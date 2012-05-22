@@ -1,11 +1,14 @@
 = Scrypto
 
-To use this:
+To use this (still in heavy development and guaranteed mostly non-functional):
 
 1. Specify it in your Gemfile.
 2. Mount it as 'mount Scrypto::Engine, :at => "/scrypto"' in your routes.rb.
 3. Add "//= require scrypto/scrypto" to your application.js.
-4. To add the key generator to a page, just include an empty 'div' tag with a class of "scrypto-key-generator".
-5. The generated form will include a "person_id" tag; be sure to set that to a value that makes sense for your application.
+4. To add the key generator to a form, include a class of "scrypto-key-generator" on the form and a "div" within the form of class: "scrypto" to identify placement for the KeyRing fields.
+5. The generated form will include a "key_ring[owner_id]" tag and a "key_ring[owner_type]" be sure to set them to values that make sense for your application.
 6. Install (and execute) the necessary migrations with "rake scrypto:install:migrations" (or use "railties:install:migrations").
-7. To encrypt a form field, specify "scrypto-encrypt" as a class for the target field and attach a string of comma-separated person_ids to the form as ".recipients"
+7. To encrypt the fields in a form:
+	a. Specify "scrypto" as a class for the target form
+	b. Set an attribute of "data-scrypto-recipients" on the form with a string of comma-separated owner_ids
+	c. Specify "scrypto-encrypt" as a class for any input fields and textareas you want to encrypt

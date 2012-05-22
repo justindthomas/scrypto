@@ -15,7 +15,7 @@
 		$(".scrypto-key-generator").each( function() {
 			var crypto = new $.fn.scrypto
 			
-			$($(this).children(".scrypto")[0]).html("" + 
+			$(this).find(".scrypto").html("" + 
 				"<input type='hidden' id='owner_id' name='key_ring[owner_id]' />" +
 				"<input type='hidden' id='owner_type' name='key_ring[owner_type]' />" +
 				"<input type='hidden' id='secured_decryption' name='key_ring[secured_decryption]' />" +
@@ -38,24 +38,28 @@
 			})
 		})
 		
-		$("form .scrypto").each( function() {
+		$("form.scrypto").each( function() {
 			var crypto = new $.fn.scrypto
 			var form = $(this)
+			
+			var fields = { }
+			
+			form.find(".scrypto-encrypt").each( function() {
+				fields[$(this).attr("id")] = $(this).val()
+			})
 			
 			var public_keys = {}
 			
 			try {
 				form.bind('submit', function(event) {
-					if(!parent_form.recipients) {
+					if(!form.attr("data-scrypto-recipients")) {
+						alert("no recipients")
 						return false
 					}
 					
-					var messages = crypto.encrypt_fields(form.recipients, 
-						form.passphrase, 
-						[field.val()], 
-						form.sender_key_ring)
+					var message = crypto.encrypt_fields(form.attr("data-scrypto-recipients"), fields)
 
-					field.val(Base64.encode(JSON.stringify(messages)))
+					alert(JSON.stringify(message))
 					return true
 				})
 			} catch (e) {
