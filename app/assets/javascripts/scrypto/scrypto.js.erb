@@ -3,29 +3,48 @@
 
 (function( $ ) {	
 	$(document).ready( function() {
+		$(".scrypto-passphrase").each( function() {
+			$(this).html(	"<label for='scrypto-passphrase'>Passphrase</label>" +
+							"<input id='scrypto-passphrase' type='password' />")
+			
+			if($(".scrypto-decrypt").length > 0) {
+				var crypto = new $.fn.scrypto
+				var key_attribute = $(this).attr("data-scrypto-key-attribute")
+				
+				$(this).html($(this).html() + "<a href='#' id='scrypto-decrypt'>Decrypt</a>")
+				
+				$("#scrypto-decrypt").bind('click', function() {
+					var keys = JSON.parse(window[key_attribute])
+					var decryption_key = crypto.decrypt_decryption_key($("#scrypto-passphrase").val(), Base64.decode(keys.decryption))
+					
+					$(".scrypto-decrypt").each( function() {
+						var message = JSON.parse(Base64.decode($(this).text()))
+						var accessible_message_key = sjcl.decrypt(decryption_key, message.recipient_message_keys[keys.id])
+						$(this).text(sjcl.decrypt(JSON.parse(accessible_message_key), message.encrypted_fields.message_body))
+					})
+				})
+			}
+		})
+		
 		$(".scrypto-entropy").each( function() {
 			var crypto = new $.fn.scrypto
 			
-			$(this).html("<span>Entropy: </span><span id='entropy'></span>")
+			$(this).html("<span>Entropy: </span><span id='entropy'>0%</span>")
 			
 			$(window).bind('mousemove', crypto.collect_entropy)
 			sjcl.random.startCollectors()
 		})
 		
-		$(".scrypto-key-generator").each( function() {
+		$(".scrypto-key-fields").each( function() {
 			var crypto = new $.fn.scrypto
 			
-			$(this).find(".scrypto").html("" + 
-				"<input type='hidden' id='owner_id' name='key_ring[owner_id]' />" +
-				"<input type='hidden' id='owner_type' name='key_ring[owner_type]' />" +
+			$(this).html("" + 
 				"<input type='hidden' id='secured_decryption' name='key_ring[secured_decryption]' />" +
 				"<input type='hidden' id='encryption' name='key_ring[encryption]' />" +
 				"<input type='hidden' id='secured_signing' name='key_ring[secured_signing]' />" +
-				"<input type='hidden' id='verification' name='key_ring[verification]' />" +
-				"<label for='scrypto-passphrase'>Passphrase</label><br>" +
-				"<input id='scrypto-passphrase' type='password' />")
+				"<input type='hidden' id='verification' name='key_ring[verification]' />")
 			
-			$(this).bind('submit', function (event) {			
+			$(this).parents("form").bind('submit', function (event) {			
 				var k = crypto.generate_keys()
 				k = crypto.encrypt_keys($("#scrypto-passphrase").val(), k)
 				
@@ -41,17 +60,36 @@
 		$("form.scrypto").each( function() {
 			var crypto = new $.fn.scrypto
 			var form = $(this)
-			
-			var fields = { }
-			
-			form.find(".scrypto-encrypt").each( function() {
-				fields[$(this).attr("id")] = $(this).val()
-			})
-			
+	
 			var public_keys = {}
 			
 			try {
 				form.bind('submit', function(event) {
+					var progress = sjcl.random.getProgress(10)
+	
+					if(progress !== undefined && progress != 1) {
+						alert("insufficient entropy")
+						return false
+					}
+					
+					if($(".scrypto-output").length == 0) {
+						alert("no output field")
+						return false
+					}
+					
+					var fields = { }
+					
+					form.find(".scrypto-encrypt").each( function() {
+						fields[$(this).attr("id")] = $(this).val()
+					})
+					
+					if($(".scrypto-lookup").length > 0) {
+						var lookup_url = $(".scrypto-lookup").first().attr("lookup-url")
+						var query = $(".scrypto-lookup").first().val()
+						
+						form.attr("data-scrypto-recipients", crypto.get_recipient_ids(lookup_url, query))				
+					}
+					
 					if(!form.attr("data-scrypto-recipients")) {
 						alert("no recipients")
 						return false
@@ -59,7 +97,8 @@
 					
 					var message = crypto.encrypt_fields(form.attr("data-scrypto-recipients"), fields)
 
-					alert(JSON.stringify(message))
+					$(".scrypto-output").first().val(Base64.encode(JSON.stringify(message)))
+
 					return true
 				})
 			} catch (e) {
@@ -86,6 +125,27 @@
 				var percentage = progress * 100;
 				$("#entropy").text(percentage.toFixed(0) + "%")
 			}
+		}
+		
+		this.get_recipient_ids = function(lookup_url, query) {
+			var recipient_ids = ""
+			
+			$.ajax({
+				url : lookup_url + query,
+				async : false,
+				dataType : "json",
+				success : function(data) {
+					for(var i = 0; i < data.length; i++) {
+						if(!recipient_ids) {
+							recipient_ids = data[i]
+						} else {
+							recipient_ids = recipient_ids + "," + data[i]
+						}
+					}
+				}
+			})
+			
+			return recipient_ids
 		}
 		
 		/**
@@ -229,6 +289,16 @@
 			var signing_key = new sjcl.ecc.ecdsa.secretKey(spk.curve, sjcl.ecc.curves['c' + spk.curve], bignum)
 	
 			return signing_key
+		}
+		
+		this.decrypt_decryption_key = function(passphrase, encrypted_decryption_key) {
+			var epks = sjcl.decrypt(passphrase, encrypted_decryption_key)
+			var spk = JSON.parse(epks)
+	
+			var bignum = sjcl.bn.fromBits(spk.exponent)
+			var decryption_key = new sjcl.ecc.elGamal.secretKey(spk.curve, sjcl.ecc.curves['c' + spk.curve], bignum)
+	
+			return decryption_key
 		}
 	};
 })( jQuery );
