@@ -14,7 +14,7 @@ Gem::Specification.new do |s|
   s.required_rubygems_version = "~> 1.8.17"
   
   s.add_dependency "activesupport"
-  s.add_dependency "rails", "~> 3.2.3"
+  s.add_dependency "rails", "~> 3.2.2"
   s.add_dependency "jquery-rails"
   
   s.files = `git ls-files`.split("\n")
