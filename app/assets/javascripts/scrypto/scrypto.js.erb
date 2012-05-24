@@ -105,7 +105,18 @@
 					"<input type='hidden' id='secured_signing' name='key_ring[secured_signing]' />" +
 					"<input type='hidden' id='verification' name='key_ring[verification]' />")
 				
-				$(this).parents("form").bind('submit', function (event) {			
+				var form = $(this).parents("form")
+				form.bind('submit', function (event) {	
+					if(form.attr("data-store-passphrase")) {
+						if(localStorage.getItem("scrypto-passphrases") == null) {
+							var passphrases = {}
+							localStorage.setItem("scrypto-passphrases", passphrases)
+						}
+						
+						var user = form.attr("data-user-id")
+						localStorage.setItem("scrypto-passphrases", localStorage.getItem("scrypto-passphrases")[user] = $("#scrypto-passphrase").val())
+					}
+					
 					var k = crypto.generate_keys()
 					k = crypto.encrypt_keys($("#scrypto-passphrase").val(), k)
 					
