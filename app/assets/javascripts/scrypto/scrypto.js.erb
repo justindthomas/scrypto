@@ -3,109 +3,8 @@
 
 (function( $ ) {	
 	$(document).ready( function() {
-		$(".scrypto-passphrase").each( function() {
-			$(this).html(	"<label for='scrypto-passphrase'>Passphrase</label>" +
-							"<input id='scrypto-passphrase' type='password' />")
-			
-			if($(".scrypto-decrypt").length > 0) {
-				var crypto = new $.fn.scrypto
-				var key_attribute = $(this).attr("data-scrypto-key-attribute")
-				
-				$(this).html($(this).html() + "<a href='#' id='scrypto-decrypt'>Decrypt</a>")
-				
-				$("#scrypto-decrypt").bind('click', function() {
-					var keys = JSON.parse(window[key_attribute])
-					var decryption_key = crypto.decrypt_decryption_key($("#scrypto-passphrase").val(), Base64.decode(keys.decryption))
-					
-					$(".scrypto-decrypt").each( function() {
-						var message = JSON.parse(Base64.decode($(this).text()))
-						var accessible_message_key = sjcl.decrypt(decryption_key, message.recipient_message_keys[keys.id])
-						$(this).text(sjcl.decrypt(JSON.parse(accessible_message_key), message.encrypted_fields.message_body))
-					})
-				})
-			}
-		})
-		
-		$(".scrypto-entropy").each( function() {
-			var crypto = new $.fn.scrypto
-			
-			$(this).html("<span>Entropy: </span><span id='entropy'>0%</span>")
-			
-			$(window).bind('mousemove', crypto.collect_entropy)
-			sjcl.random.startCollectors()
-		})
-		
-		$(".scrypto-key-fields").each( function() {
-			var crypto = new $.fn.scrypto
-			
-			$(this).html("" + 
-				"<input type='hidden' id='secured_decryption' name='key_ring[secured_decryption]' />" +
-				"<input type='hidden' id='encryption' name='key_ring[encryption]' />" +
-				"<input type='hidden' id='secured_signing' name='key_ring[secured_signing]' />" +
-				"<input type='hidden' id='verification' name='key_ring[verification]' />")
-			
-			$(this).parents("form").bind('submit', function (event) {			
-				var k = crypto.generate_keys()
-				k = crypto.encrypt_keys($("#scrypto-passphrase").val(), k)
-				
-				$("#secured_decryption").val(Base64.encode(k.encryption.sec))
-				$("#encryption").val(Base64.encode(JSON.stringify(k.encryption.pub)))
-				$("#secured_signing").val(Base64.encode(k.signing.sec))
-				$("#verification").val(Base64.encode(JSON.stringify(k.signing.pub)))
-
-				return true
-			})
-		})
-		
-		$("form.scrypto").each( function() {
-			var crypto = new $.fn.scrypto
-			var form = $(this)
-	
-			var public_keys = {}
-			
-			try {
-				form.bind('submit', function(event) {
-					var progress = sjcl.random.getProgress(10)
-	
-					if(progress !== undefined && progress != 1) {
-						alert("insufficient entropy")
-						return false
-					}
-					
-					if($(".scrypto-output").length == 0) {
-						alert("no output field")
-						return false
-					}
-					
-					var fields = { }
-					
-					form.find(".scrypto-encrypt").each( function() {
-						fields[$(this).attr("id")] = $(this).val()
-					})
-					
-					if($(".scrypto-lookup").length > 0) {
-						var lookup_url = $(".scrypto-lookup").first().attr("lookup-url")
-						var query = $(".scrypto-lookup").first().val()
-						
-						form.attr("data-scrypto-recipients", crypto.get_recipient_ids(lookup_url, query))				
-					}
-					
-					if(!form.attr("data-scrypto-recipients")) {
-						alert("no recipients")
-						return false
-					}
-					
-					var message = crypto.encrypt_fields(form.attr("data-scrypto-recipients"), fields)
-
-					$(".scrypto-output").first().val(Base64.encode(JSON.stringify(message)))
-
-					return true
-				})
-			} catch (e) {
-				console.log(e)
-				return false
-			}
-		})
+		var crypto = new $.fn.scrypto		
+		crypto.attach("html")		
 	})
 		
 	$.fn.scrypto = function() {"use strict"
@@ -113,6 +12,112 @@
 			throw new Error("Constructor called as a function")
 	
 		var crypto = this
+		
+		this.attach = function (parent) {
+			$(parent + " form.scrypto").each( function() {
+				var form = $(this)
+		
+				var public_keys = {}
+				
+				try {
+					form.bind('submit', function(event) {
+						var progress = sjcl.random.getProgress(10)
+		
+						if(progress !== undefined && progress != 1) {
+							alert("insufficient entropy")
+							return false
+						}
+						
+						if($(parent + " .scrypto-output").length == 0) {
+							alert("no output field")
+							return false
+						}
+						
+						var fields = { }
+						
+						form.find(".scrypto-encrypt").each( function() {
+							fields[$(this).attr("id")] = $(this).val()
+						})
+						
+						if($(parent + " .scrypto-lookup").length > 0) {
+							var lookup_url = $(parent + " .scrypto-lookup").first().attr("lookup-url")
+							var query = $(parent + " .scrypto-lookup").first().val()
+							
+							var recipients =  crypto.get_recipient_ids(lookup_url, query)
+							
+							if(form.attr("data-scrypto-sender") != undefined) {
+								recipients = recipients + "," + form.attr("data-scrypto-sender")
+							}
+							
+							form.attr("data-scrypto-recipients", recipients)				
+						}
+						
+						if(!form.attr("data-scrypto-recipients")) {
+							alert("no recipients")
+							return false
+						}
+						
+						var message = crypto.encrypt_fields(form.attr("data-scrypto-recipients"), fields)
+	
+						$(parent + " .scrypto-output").first().val(Base64.encode(JSON.stringify(message)))
+	
+						return true
+					})
+				} catch (e) {
+					console.log(e)
+					return false
+				}
+			})
+			
+			$(parent + " .scrypto-passphrase").each( function() {
+				$(this).html(	"<label for='scrypto-passphrase'>Passphrase</label>" +
+								"<input id='scrypto-passphrase' type='password' />")
+				
+				if($(parent + " .scrypto-decrypt").length > 0) {
+					var key_attribute = $(this).attr("data-scrypto-key-attribute")
+					
+					$(this).html($(this).html() + "<a href='#' id='scrypto-decrypt'>Decrypt</a>")
+					
+					$(parent + " #scrypto-decrypt").bind('click', function() {
+						var keys = JSON.parse(window[key_attribute])
+						var decryption_key = crypto.decrypt_decryption_key($("#scrypto-passphrase").val(), Base64.decode(keys.decryption))
+						
+						$(parent + " .scrypto-decrypt").each( function() {
+							var message = JSON.parse(Base64.decode($(this).text()))
+							var accessible_message_key = sjcl.decrypt(decryption_key, message.recipient_message_keys[keys.id])
+							$(this).text(sjcl.decrypt(JSON.parse(accessible_message_key), message.encrypted_fields.message_body))
+						})
+					})
+				}
+			})
+			
+			$(parent + " .scrypto-entropy").each( function() {
+				$(this).html("<span>Entropy: </span><span id='entropy'>0%</span>")
+				
+				$(window).bind('mousemove', crypto.collect_entropy)
+				sjcl.random.startCollectors()
+			})
+			
+			$(parent + " .scrypto-key-fields").each( function() {
+				$(this).html("" + 
+					"<input type='hidden' id='secured_decryption' name='key_ring[secured_decryption]' />" +
+					"<input type='hidden' id='encryption' name='key_ring[encryption]' />" +
+					"<input type='hidden' id='secured_signing' name='key_ring[secured_signing]' />" +
+					"<input type='hidden' id='verification' name='key_ring[verification]' />")
+				
+				$(this).parents("form").bind('submit', function (event) {			
+					var k = crypto.generate_keys()
+					k = crypto.encrypt_keys($("#scrypto-passphrase").val(), k)
+					
+					$("#secured_decryption").val(Base64.encode(k.encryption.sec))
+					$("#encryption").val(Base64.encode(JSON.stringify(k.encryption.pub)))
+					$("#secured_signing").val(Base64.encode(k.signing.sec))
+					$("#verification").val(Base64.encode(JSON.stringify(k.signing.pub)))
+	
+					return true
+				})
+			})
+		}
 		
 		this.collect_entropy = function() {
 			var progress = sjcl.random.getProgress(10)
