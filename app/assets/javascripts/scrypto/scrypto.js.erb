@@ -108,13 +108,16 @@
 				var form = $(this).parents("form")
 				form.bind('submit', function (event) {	
 					if(form.attr("data-store-passphrase")) {
-						if(localStorage.getItem("scrypto-passphrases") == null) {
+						if(localStorage["scrypto-passphrases"] == null) {
 							var passphrases = {}
-							localStorage.setItem("scrypto-passphrases", passphrases)
+							localStorage["scrypto-passphrases"] = JSON.stringify(passphrases)
 						}
 						
 						var user = form.attr("data-user-id")
-						localStorage.setItem("scrypto-passphrases", localStorage.getItem("scrypto-passphrases")[user] = $("#scrypto-passphrase").val())
+						var passphrases = JSON.parse(localStorage.getItem("scrypto-passphrases"))
+						passphrases[user] = $("#scrypto-passphrase").val()
+						
+						localStorage["scrypto-passphrases"] = JSON.stringify(passphrases)
 					}
 					
 					var k = crypto.generate_keys()
