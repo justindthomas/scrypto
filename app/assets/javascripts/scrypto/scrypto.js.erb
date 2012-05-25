@@ -10,7 +10,7 @@
 	$.fn.scrypto = function() {"use strict"
 		if(!(this instanceof $.fn.scrypto))
 			throw new Error("Constructor called as a function")
-	
+		
 		var crypto = this
 		
 		this.attach = function (parent) {
@@ -59,7 +59,7 @@
 						
 						var message = crypto.encrypt_fields(form.attr("data-scrypto-recipients"), fields)
 	
-						$(parent + " .scrypto-output").first().val(Base64.encode(JSON.stringify(message)))
+						$(parent + " .scrypto-output").first().val("[scrypto]" + Base64.encode(JSON.stringify(message)) + "[/scrypto]")
 	
 						return true
 					})
@@ -73,21 +73,17 @@
 				$(this).html(	"<label for='scrypto-passphrase'>Passphrase</label>" +
 								"<input id='scrypto-passphrase' type='password' />")
 				
-				if($(parent + " .scrypto-decrypt").length > 0) {
-					var key_attribute = $(this).attr("data-scrypto-key-attribute")
+				var key_attribute = $(this).attr("data-scrypto-key-attribute")									
+				
+				if(window[key_attribute] && window[key_attribute].key_ring) {
+					var id = window[key_attribute].key_ring.id	
+	
+					if(localStorage["scrypto-passphrases"] && JSON.parse(localStorage["scrypto-passphrases"])[id]) {
+						$(this).hide()
+						$("#scrypto-passphrase").val(JSON.parse(localStorage["scrypto-passphrases"])[id])
+					}
 					
-					$(this).html($(this).html() + "<a href='#' id='scrypto-decrypt'>Decrypt</a>")
-					
-					$(parent + " #scrypto-decrypt").bind('click', function() {
-						var keys = JSON.parse(window[key_attribute])
-						var decryption_key = crypto.decrypt_decryption_key($("#scrypto-passphrase").val(), Base64.decode(keys.decryption))
-						
-						$(parent + " .scrypto-decrypt").each( function() {
-							var message = JSON.parse(Base64.decode($(this).text()))
-							var accessible_message_key = sjcl.decrypt(decryption_key, message.recipient_message_keys[keys.id])
-							$(this).text(sjcl.decrypt(JSON.parse(accessible_message_key), message.encrypted_fields.message_body))
-						})
-					})
+					crypto.decrypt_page(key_attribute)
 				}
 			})
 			
@@ -106,7 +102,19 @@
 					"<input type='hidden' id='verification' name='key_ring[verification]' />")
 				
 				var form = $(this).parents("form")
-				form.bind('submit', function (event) {	
+				form.bind('submit', function (event) {
+					var progress = sjcl.random.getProgress(10)
+		
+					if(progress !== undefined && progress != 1) {
+						alert("insufficient entropy")
+						return false
+					}
+					
+					if(!$("#scrypto-passphrase").val()) {
+						alert("enter a passphrase")
+						return false
+					}
+							
 					if(form.attr("data-store-passphrase")) {
 						if(localStorage["scrypto-passphrases"] == null) {
 							var passphrases = {}
@@ -133,6 +141,26 @@
 			})
 		}
 		
+		this.decrypt_page = function(key_attribute) {
+			var keys = window[key_attribute].key_ring
+			var decryption_key = crypto.decrypt_decryption_key($("#scrypto-passphrase").val(), Base64.decode(keys.secured_decryption))
+							
+			$(".scrypto-decrypt").each( function () {
+				var html = $(this).html()
+				var encrypted_messages = html.match(/\[scrypto\].*\[\/scrypto\]/)
+										
+				if(encrypted_messages) {
+					for(var i = 0; i < encrypted_messages.length; i++) {
+						var message = JSON.parse(Base64.decode(encrypted_messages[i].replace('[scrypto]', '').replace('[/scrypto]', '')))
+						var accessible_message_key = sjcl.decrypt(decryption_key, message.recipient_message_keys[keys.id])
+										
+						html = html.replace(encrypted_messages[i], sjcl.decrypt(JSON.parse(accessible_message_key), message.encrypted_fields.conversation_text))						
+					}
+											
+					$(this).html(html)
+				}
+			})
+		}
 		this.collect_entropy = function() {
 			var progress = sjcl.random.getProgress(10)
 	
