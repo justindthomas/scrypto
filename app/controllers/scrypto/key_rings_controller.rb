@@ -66,6 +66,8 @@ module Scrypto
     # POST /key_rings.json
     def create
       @key_ring = KeyRing.new(params[:key_ring])
+      @key_ring.owner_id = scrypto_id
+      @key_ring.owner_type = Scrypto.owner_class
   
       respond_to do |format|
         if @key_ring.save

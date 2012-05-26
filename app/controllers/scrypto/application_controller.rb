@@ -1,4 +1,4 @@
 module Scrypto
-  class ApplicationController < ActionController::Base
+  class Scrypto::ApplicationController < ActionController::Base
   end
 end
