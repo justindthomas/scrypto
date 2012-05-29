@@ -1,8 +1,8 @@
 module Scrypto
   class KeyRingsController < ApplicationController
-    # GET /key_rings
     # GET /key_rings.json
     def index
+      @owner = scrypto_id
       @key_rings = KeyRing.all
   
       respond_to do |format|
