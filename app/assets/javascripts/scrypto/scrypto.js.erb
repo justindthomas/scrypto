@@ -10,11 +10,11 @@
 		$(document).decrypt_all()
 		
 		$(document).on("submit", "form", function(event) {
-			if(!$("[data-secure_fields]").length) {
+			if(!window.get_scrypto_config()) {
 				return true
 			}
 
-			var secure_fields = $("[data-secure_fields]").attr("data-secure_fields").split(",")
+			var secure_fields = window.get_scrypto_config().secure_fields.split(",")
 
 			var success = true
 
@@ -29,13 +29,15 @@
 	})
 	
 	$.fn.decrypt_all = function() {
-		if($("[data-decrypt_fields]").length > 0) {
-			var decrypt_fields = $("[data-decrypt_fields]").attr("data-decrypt_fields").split(",")
+		if(!window.get_scrypto_config()) {
+			return
+		}
+			
+		var decrypt_fields = window.get_scrypto_config().decrypt_fields.split(",")
 
-			for(var i = 0; i < decrypt_fields.length; i++) {
-				if($(decrypt_fields[i]).length > 0) {
-					$(decrypt_fields[i]).decrypt_text()
-				}
+		for(var i = 0; i < decrypt_fields.length; i++) {
+			if($(decrypt_fields[i]).length > 0) {
+				$(decrypt_fields[i]).decrypt_text()
 			}
 		}
 	}
@@ -69,12 +71,13 @@
 		}
 
 		this.each(function() {
-			var dependent_elements
-			if($("[data-entropy_dependent]").length > 0) {
-				dependent_elements = $("[data-entropy_dependent]").attr("data-entropy_dependent").split(",")
-				for(var i = 0; i < dependent_elements.length; i++) {
-					$(dependent_elements[i]).hide()
-				}
+			if(!window.get_scrypto_config()) {
+				return
+			}
+			
+			var dependent_elements = window.get_scrypto_config().entropy_dependent.split(",")
+			for(var i = 0; i < dependent_elements.length; i++) {
+				$(dependent_elements[i]).hide()
 			}
 			
 			$(this).html("<span>Entropy: </span><span id='entropy'>0%</span>")
@@ -134,9 +137,7 @@
 
 			var owner
 
-			if($("[data-owner]").length > 0) {
-				owner = $("[data-owner]").first().attr("data-owner")
-			}
+			owner = window.get_scrypto_config().owner
 
 			if(owner) {
 				if(localStorage["scrypto-passphrases"] && JSON.parse(localStorage["scrypto-passphrases"])[owner]) {
@@ -153,7 +154,7 @@
 
 		this.each(function() {
 			if(!accessible_message_key) {
-				secured_decryption = $("[data-decryption_key]").first().attr("data-decryption_key")
+				secured_decryption = window.get_scrypto_config().decryption_key
 				decryption_key = scrypto.decrypt_decryption_key($("#scrypto-passphrase").val(), Base64.decode(secured_decryption))
 			}
 			
@@ -164,18 +165,16 @@
 			if(encrypted_messages) {
 				for(var k = 0; k < encrypted_messages.length; k++) {
 					var message = JSON.parse(Base64.decode(encrypted_messages[k].replace('[scrypto]', '').replace('[/scrypto]', '')))
-					var owner = $("[data-owner]").first().attr("data-owner")
+					var owner = window.get_scrypto_config().owner
 					
 					if(!accessible_message_key) {
 						accessible_message_key = sjcl.decrypt(decryption_key, message.recipient_message_keys[owner])
 
-						if($("[data-symmetric_fields]").length > 0) {
-							var symmetric_fields = $("[data-symmetric_fields]").attr("data-symmetric_fields").split(",")
-							for(var i = 0; i < symmetric_fields.length; i++) {
-								$(symmetric_fields[i]).each( function() {
-									$(this).attr("data-symmetric_key", Base64.encode(accessible_message_key))
-								})
-							}
+						var symmetric_fields = window.get_scrypto_config().symmetric_fields.split(",")
+						for(var i = 0; i < symmetric_fields.length; i++) {
+							$(symmetric_fields[i]).each( function() {
+								$(this).attr("data-symmetric_key", Base64.encode(accessible_message_key))
+							})
 						}
 					}
 					
@@ -205,16 +204,12 @@
 					return false
 				}
 	
-				if($("[data-lookup_field]").length > 0 && $("[data-lookup_url]").length > 0) {
-					var query = $("#" + $("[data-lookup_field]").attr("data-lookup_field")).first().val()
-					var url = $("[data-lookup_url]").first().attr("data-lookup_url")
+				var query = $("#" + window.get_scrypto_config().lookup_field).first().val()
+				var url = window.get_scrypto_config().lookup_url
 	
-					recipients = scrypto.get_recipient_ids(url, query)
+				recipients = scrypto.get_recipient_ids(url, query)
 	
-					if($("[data-owner]").length > 0) {
-						recipients = recipients + "," + $("[data-owner]").first().attr("data-owner")
-					}
-				}
+				recipients = recipients + "," + window.get_scrypto_config().owner
 	
 				if(!recipients) {
 					alert("no recipients")
