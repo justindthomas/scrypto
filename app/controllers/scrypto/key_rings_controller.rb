@@ -14,8 +14,16 @@ module Scrypto
     def public_keys
       @key_rings = { }
       
-      KeyRing.where(:owner_id => params[:owner_ids].split(',')).each do |key_ring|
+      requested_owners = params[:owner_ids].split(',').reject(&:empty?)
+      
+      KeyRing.where(:owner_id => requested_owners).each do |key_ring|
         @key_rings[key_ring.owner_id] = key_ring.encryption
+      end
+      
+      if @key_rings.length != requested_owners.length
+        @key_rings["complete"] = false
+      else
+        @key_rings["complete"] = true
       end
       
       respond_to do |format|
