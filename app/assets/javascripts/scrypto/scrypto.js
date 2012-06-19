@@ -105,15 +105,10 @@
 	$.fn.generate_keys = function() {
 		this.each(function() {
 			var store_passphrase = $(this).attr("data-store_passphrase")
-			if (!store_passphrase) {
-				store_passphrase = ""
-			} else {
-				store_passphrase = "data-store_passphrase='true'"
-			}
 
 			var form_id = random_id()
 			var url = window.get_scrypto_config().mount_point + "/key_rings"
-			$(this).html("<form id='" + form_id + "' data-remote='true' method='post' action='" + url + "' " + store_passphrase + ">" + "<input type='hidden' id='secured_decryption' name='key_ring[secured_decryption]' />" + "<input type='hidden' id='encryption' name='key_ring[encryption]' />" + "<input type='hidden' id='secured_signing' name='key_ring[secured_signing]' />" + "<input type='hidden' id='verification' name='key_ring[verification]' />" + "<input type='submit' value='Create Keys' />" + "</form>")
+			$(this).html("<form id='" + form_id + "' data-remote='true' method='post' action='" + url + "'>" + "<input type='hidden' id='secured_decryption' name='key_ring[secured_decryption]' />" + "<input type='hidden' id='encryption' name='key_ring[encryption]' />" + "<input type='hidden' id='secured_signing' name='key_ring[secured_signing]' />" + "<input type='hidden' id='verification' name='key_ring[verification]' />" + "<input type='submit' value='Create Keys' />" + "</form>")
 
 			var form = $("#" + form_id)
 			form.bind('submit', function(event) {
@@ -129,13 +124,13 @@
 					return false
 				}
 
-				if (form.attr("data-store-passphrase")) {
+				if (store_passphrase) {
 					if (localStorage["scrypto-passphrases"] == null) {
 						var passphrases = {}
 						localStorage["scrypto-passphrases"] = JSON.stringify(passphrases)
 					}
 
-					var user = form.attr("data-user-id")
+					var user = window.get_scrypto_config().owner.local
 					var passphrases = JSON.parse(localStorage.getItem("scrypto-passphrases"))
 					passphrases[user] = $("#scrypto-passphrase").val()
 
