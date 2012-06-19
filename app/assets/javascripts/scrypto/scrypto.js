@@ -19,8 +19,8 @@
 						success = $(this).encrypt_text()
 					})
 				}
-				
-				if(!success) {
+
+				if (!success) {
 					alert("unable to send message")
 				}
 
@@ -28,7 +28,6 @@
 			})
 		}
 	})
-	
 	var random_id = function() {
 		var chars = "ABCDEFGHIJKLMNOPQRSTUVWXTZ";
 		var string_length = 8;
@@ -174,8 +173,8 @@
 
 			var owner = window.get_scrypto_config().owner
 			if (owner) {
-				if (localStorage["scrypto-passphrases"] && JSON.parse(localStorage["scrypto-passphrases"])[owner]) {
-					$("#scrypto-passphrase").val(JSON.parse(localStorage["scrypto-passphrases"])[owner])
+				if (localStorage["scrypto-passphrases"] && JSON.parse(localStorage["scrypto-passphrases"])[owner.local]) {
+					$("#scrypto-passphrase").val(JSON.parse(localStorage["scrypto-passphrases"])[owner.local])
 				}
 			}
 		})
@@ -200,7 +199,8 @@
 			if (encrypted_messages) {
 				for (var k = 0; k < encrypted_messages.length; k++) {
 					var message = JSON.parse(Base64.decode(encrypted_messages[k].replace('[scrypto]', '').replace('[/scrypto]', '')))
-					var owner = window.get_scrypto_config().owner
+					
+					var owner = (window.get_scrypto_config().owner.global) ? window.get_scrypto_config().owner.global : window.get_scrypto_config().owner.local
 
 					if (!accessible_message_key) {
 						accessible_message_key = sjcl.decrypt(decryption_key, message.recipient_message_keys[owner])
@@ -223,9 +223,9 @@
 
 	$.fn.encrypt_text = function() {
 		var success
-		
+
 		var public_keys = {}
-		
+
 		try {
 			var scrypto = new $.fn.scrypto
 
@@ -245,8 +245,7 @@
 					var url = window.get_scrypto_config().lookup_url
 
 					recipients = scrypto.get_recipient_ids(url, query)
-
-					recipients = recipients + "," + window.get_scrypto_config().owner
+					recipients.push(window.get_scrypto_config().owner)
 
 					if (!recipients) {
 						alert("no recipients specified: canceling send operation")
@@ -287,13 +286,7 @@
 				async : false,
 				dataType : "json",
 				success : function(data) {
-					for (var i = 0; i < data.length; i++) {
-						if (!recipient_ids) {
-							recipient_ids = data[i]
-						} else {
-							recipient_ids = recipient_ids + "," + data[i]
-						}
-					}
+					recipient_ids = data
 				}
 			})
 
@@ -377,7 +370,7 @@
 					if (!shared_key) {
 						shared_key = public_keys[id].kem(10).key
 					}
-					
+
 					encrypted_message.recipient_message_keys[id] = sjcl.encrypt(public_keys[id], JSON.stringify(shared_key))
 				}
 			}
@@ -404,10 +397,16 @@
 		}
 
 		this.get_public_keys = function(owner_ids) {
-			var public_keys
+			var public_keys, key_ring_ids
+			var local_to_global = {}
+
+			for (var i = 0; i < owner_ids.length; i++) {
+				key_ring_ids = (key_ring_ids === undefined) ? owner_ids[i].local : key_ring_ids + "," + owner_ids[i].local
+				local_to_global[owner_ids[i].local] = owner_ids[i].global
+			}
 
 			$.ajax({
-				url : "/scrypto/public_keys.json?owner_ids=" + owner_ids,
+				url : window.get_scrypto_config().mount_point + "/public_keys.json?owner_ids=" + key_ring_ids,
 				async : false,
 				dataType : "json",
 				success : function(keys) {
@@ -415,6 +414,11 @@
 				}
 			})
 
+			var keys_to_return = { }
+			if(public_keys.complete) {
+				keys_to_return["complete"] = true
+			}
+			
 			for (var key in public_keys) {
 				if (key == 'complete') {
 					continue
@@ -422,10 +426,17 @@
 
 				var json = JSON.parse(Base64.decode(public_keys[key]))
 				var point = sjcl.ecc.curves['c' + json.curve].fromBits(json.point)
-				public_keys[key] = new sjcl.ecc.elGamal.publicKey(json.curve, point.curve, point)
+				
+				var k = new sjcl.ecc.elGamal.publicKey(json.curve, point.curve, point)
+				
+				if(local_to_global[key]) {
+					keys_to_return[local_to_global[key]] = k
+				} else { 
+					keys_to_return[key] = k
+				}
 			}
 
-			return public_keys
+			return keys_to_return
 		}
 
 		this.decrypt_signing_key = function(passphrase, encrypted_signing_key) {
