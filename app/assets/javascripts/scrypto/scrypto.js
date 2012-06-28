@@ -84,6 +84,11 @@
 			if (require_decryption_key && !window.get_scrypto_config().decryption_key) {
 				return
 			}
+			
+			var existing_dk_nillable = $(this).attr("data-existing_dk_nillable")
+			if (existing_dk_nillable && (window.get_scrypto_config().decryption_key != null)) {
+				return
+			}
 
 			var dependent_elements
 			if (window.get_scrypto_config().entropy_dependent) {
@@ -106,48 +111,52 @@
 		this.each(function() {
 			var store_passphrase = $(this).attr("data-store_passphrase")
 
-			var form_id = random_id()
-			var url = window.get_scrypto_config().mount_point + "/key_rings"
-			$(this).html("<form id='" + form_id + "' data-remote='true' method='post' action='" + url + "'>" + "<input type='hidden' id='secured_decryption' name='key_ring[secured_decryption]' />" + "<input type='hidden' id='encryption' name='key_ring[encryption]' />" + "<input type='hidden' id='secured_signing' name='key_ring[secured_signing]' />" + "<input type='hidden' id='verification' name='key_ring[verification]' />" + "<input type='submit' value='Create Keys' />" + "</form>")
-
-			var form = $("#" + form_id)
-			form.bind('submit', function(event) {
-				var progress = sjcl.random.getProgress(10)
-
-				if (progress !== undefined && progress != 1) {
-					alert("insufficient entropy")
-					return false
-				}
-
-				if (!$("#scrypto-passphrase").val()) {
-					alert("enter a passphrase")
-					return false
-				}
-
-				if (store_passphrase) {
-					if (localStorage["scrypto-passphrases"] == null) {
-						var passphrases = {}
+			if(window.get_scrypto_config().decryption_key == null) {
+				var url = window.get_scrypto_config().mount_point + "/key_rings"
+				$(this).html("<form id='scrypto-key-generator' data-remote='true' method='post' action='" + url + "'>" + "<input type='hidden' id='secured_decryption' name='key_ring[secured_decryption]' />" + "<input type='hidden' id='encryption' name='key_ring[encryption]' />" + "<input type='hidden' id='secured_signing' name='key_ring[secured_signing]' />" + "<input type='hidden' id='verification' name='key_ring[verification]' />" + "<input type='submit' value='Create Keys' />" + "</form>")
+	
+				var form = $("#scrypto-key-generator")
+				form.bind('submit', function(event) {
+					var progress = sjcl.random.getProgress(10)
+	
+					if (progress !== undefined && progress != 1) {
+						alert("insufficient entropy")
+						return false
+					}
+	
+					if (!$("#scrypto-passphrase").val()) {
+						alert("enter a passphrase")
+						return false
+					}
+	
+					if (store_passphrase) {
+						if (localStorage["scrypto-passphrases"] == null) {
+							var passphrases = {}
+							localStorage["scrypto-passphrases"] = JSON.stringify(passphrases)
+						}
+	
+						var user = window.get_scrypto_config().owner.local
+						var passphrases = JSON.parse(localStorage.getItem("scrypto-passphrases"))
+						passphrases[user] = $("#scrypto-passphrase").val()
+	
 						localStorage["scrypto-passphrases"] = JSON.stringify(passphrases)
 					}
+	
+					var scrypto = new $.fn.scrypto
+					var k = scrypto.generate_keys()
+					k = scrypto.encrypt_keys($("#scrypto-passphrase").val(), k)
+	
+					$("#secured_decryption").val(Base64.encode(k.encryption.sec))
+					$("#encryption").val(Base64.encode(JSON.stringify(k.encryption.pub)))
+					$("#secured_signing").val(Base64.encode(k.signing.sec))
+					$("#verification").val(Base64.encode(JSON.stringify(k.signing.pub)))
+	
+					return true
+				})
+			} else {
+				$(this).html("Key ring has been generated.")
 
-					var user = window.get_scrypto_config().owner.local
-					var passphrases = JSON.parse(localStorage.getItem("scrypto-passphrases"))
-					passphrases[user] = $("#scrypto-passphrase").val()
-
-					localStorage["scrypto-passphrases"] = JSON.stringify(passphrases)
-				}
-
-				var scrypto = new $.fn.scrypto
-				var k = scrypto.generate_keys()
-				k = scrypto.encrypt_keys($("#scrypto-passphrase").val(), k)
-
-				$("#secured_decryption").val(Base64.encode(k.encryption.sec))
-				$("#encryption").val(Base64.encode(JSON.stringify(k.encryption.pub)))
-				$("#secured_signing").val(Base64.encode(k.signing.sec))
-				$("#verification").val(Base64.encode(JSON.stringify(k.signing.pub)))
-
-				return true
-			})
+			}
 		})
 	}
 
@@ -156,6 +165,11 @@
 			// if key ring is required, check that it exists
 			var require_decryption_key = $(this).attr("data-require_decryption_key")
 			if (require_decryption_key && !window.get_scrypto_config().decryption_key) {
+				return
+			}
+			
+			var existing_dk_nillable = $(this).attr("data-existing_dk_nillable")
+			if (existing_dk_nillable && (window.get_scrypto_config().decryption_key != null)) {
 				return
 			}
 
