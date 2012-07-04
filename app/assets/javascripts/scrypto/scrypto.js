@@ -174,6 +174,7 @@
 
 			localStorage["scrypto-passphrases"] = JSON.stringify(passphrases)
 			$('#store-passphrase').html("Local passphrase updated.")
+			$('#scrypto-passphrase').prop('disabled', true)
 		}
 
 		this.each(function() {
