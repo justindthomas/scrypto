@@ -173,6 +173,7 @@
 			passphrases[user] = $("#scrypto-passphrase").val()
 
 			localStorage["scrypto-passphrases"] = JSON.stringify(passphrases)
+			$('#store-passphrase').html("Local passphrase updated.")
 		}
 
 		this.each(function() {
@@ -196,11 +197,11 @@
 
 			var store_passphrase = $(this).attr("data-store_passphrase")
 			if (!hidden && store_passphrase && (window.get_scrypto_config().decryption_key != null)) {
-				html = html + "<a id='store-passphrase' href='#'>Save/Update Local Passphrase</a>"
+				html = html + "<span id='store-passphrase'><a href='#'>Update Local Passphrase</a></span>"
 			}
 
 			$(this).html(html)
-			$('#store-passphrase').on('click', update_passphrase)
+			$('#store-passphrase a').on('click', update_passphrase)
 
 			var owner = window.get_scrypto_config().owner
 			if (owner) {
