@@ -218,6 +218,7 @@
 		var accessible_message_key, secured_decryption, decryption_key
 
 		this.each(function() {
+			console.log("1")
 			if (!accessible_message_key && !window.get_scrypto_config().decryption_key) {
 				return
 			} else if (!accessible_message_key) {
@@ -230,12 +231,15 @@
 				}
 			}
 
+			console.log("2")
 			var html = $(this).html()
 
 			var encrypted_messages = html.match(/\[scrypto\].*\[\/scrypto\]/)
-
+			console.log("3")
 			if (encrypted_messages) {
+				console.log("4")
 				for (var k = 0; k < encrypted_messages.length; k++) {
+					console.log("5")
 					var message = JSON.parse(Base64.decode(encrypted_messages[k].replace('[scrypto]', '').replace('[/scrypto]', '')))
 
 					var owner = (window.get_scrypto_config().owner.global) ? window.get_scrypto_config().owner.global : window.get_scrypto_config().owner.local
@@ -250,9 +254,9 @@
 							})
 						}
 					}
-
+					console.log("6")
 					var text = sjcl.decrypt(JSON.parse(accessible_message_key), message.encrypted_text);
-					
+					console.log("7")
 					if(typeof(Markdown) === 'object' && typeof(Markdown.getSanitizingConverter) === 'function') {
 						var converter = Markdown.getSanitizingConverter()
 						text = converter.makeHtml(text)
@@ -260,7 +264,7 @@
 					
 					html = html.replace(encrypted_messages[k], text)
 				}
-
+				console.log("8")
 				$(this).html(html)
 			}
 		})
