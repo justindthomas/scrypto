@@ -223,6 +223,11 @@
 			} else if (!accessible_message_key) {
 				secured_decryption = window.get_scrypto_config().decryption_key
 				decryption_key = scrypto.decrypt_decryption_key($("#scrypto-passphrase").val(), Base64.decode(secured_decryption))
+				
+				if(decryption_key === null) {
+					$(this).html("<p>This message is encrypted, but no suitable decryption key is available. This may occur if an incorrect passphrase (or no passphrase) is specified.</p>")
+					return
+				}
 			}
 
 			var html = $(this).html()
@@ -249,7 +254,6 @@
 					var text = sjcl.decrypt(JSON.parse(accessible_message_key), message.encrypted_text);
 					
 					if(typeof(Markdown) === 'object' && typeof(Markdown.getSanitizingConverter) === 'function') {
-						console.log("markdown found: converting")
 						var converter = Markdown.getSanitizingConverter()
 						text = converter.makeHtml(text)
 					}
@@ -485,7 +489,13 @@
 		}
 
 		this.decrypt_signing_key = function(passphrase, encrypted_signing_key) {
-			var epks = sjcl.decrypt(passphrase, encrypted_signing_key)
+			var epks
+			try {
+				epks = sjcl.decrypt(passphrase, encrypted_signing_key)
+			} catch(e) {
+				return null
+			}
+			
 			var spk = JSON.parse(epks)
 
 			var bignum = sjcl.bn.fromBits(spk.exponent)
@@ -495,7 +505,13 @@
 		}
 
 		this.decrypt_decryption_key = function(passphrase, encrypted_decryption_key) {
-			var epks = sjcl.decrypt(passphrase, encrypted_decryption_key)
+			var epks
+			try {
+				epks = sjcl.decrypt(passphrase, encrypted_decryption_key)
+			} catch(e) {
+				return null
+			}
+			
 			var spk = JSON.parse(epks)
 
 			var bignum = sjcl.bn.fromBits(spk.exponent)
