@@ -1,0 +1,15 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/Fixtures.html
+
+one:
+  owner_id: 1
+  owner_type: MyString
+  entity_id: 1
+  entity_type: MyString
+  encrypted_key: MyString
+
+two:
+  owner_id: 1
+  owner_type: MyString
+  entity_id: 1
+  entity_type: MyString
+  encrypted_key: MyString

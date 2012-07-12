@@ -11,23 +11,37 @@
 
 			$(document).decrypt_all()
 
+			console.log('attaching')
 			$(document).on("submit", "form", function(event) {
 				var success = true
-				var secure_fields = window.get_scrypto_config().secure_fields.split(",")
+				try {
+					if (($(this).attr('id') in window.get_scrypto_config().secure_forms)) {
+						console.log("encrypting form")
+						$(this).encrypt_form()
 
-				for (var i = 0; i < secure_fields.length; i++) {
-					$(this).find(secure_fields[i]).each(function() {
-						success = $(this).encrypt_text()
-					})
-				}
+						console.log("completed encrypting form")
+					} else {
+						var secure_fields = window.get_scrypto_config().secure_fields.split(",")
 
-				if (!success) {
-					alert("unable to send message")
+						for (var i = 0; i < secure_fields.length; i++) {
+							$(this).find(secure_fields[i]).each(function() {
+								success = $(this).encrypt_text()
+							})
+						}
+
+						if (!success) {
+							console.log("unable to send message")
+						}
+					}
+				} catch (e) {
+					console.log(e)
 				}
 
 				return success
 			})
 		}
+
+		return true
 	})
 	var random_id = function() {
 		var chars = "ABCDEFGHIJKLMNOPQRSTUVWXTZ";
@@ -112,12 +126,12 @@
 			var progress = sjcl.random.getProgress(10)
 
 			if (progress !== undefined && progress != 1) {
-				alert("insufficient entropy")
+				console.log("insufficient entropy")
 				return false
 			}
 
 			if (!$("#scrypto-passphrase").val()) {
-				alert("enter a passphrase")
+				console.log("enter a passphrase")
 				return false
 			}
 
@@ -146,7 +160,7 @@
 			return true
 		})
 	}
-	
+
 	$.fn.key_fields = function() {
 		this.each(function() {
 			$(this).html("<input type='hidden' id='secured_decryption' name='key_ring[secured_decryption]' />" + "<input type='hidden' id='encryption' name='key_ring[encryption]' />" + "<input type='hidden' id='secured_signing' name='key_ring[secured_signing]' />" + "<input type='hidden' id='verification' name='key_ring[verification]' />")
@@ -281,6 +295,42 @@
 		})
 	}
 
+	$.fn.encrypt_form = function() {
+		var scrypto = new $.fn.scrypto
+
+		this.each(function() {
+			var recipient_field = $(this).find(window.get_scrypto_config().secure_forms[$(this).attr('id')])
+			if (recipient_field.length != 1) {
+				console.log("no recipient field found")
+				return false
+			} else {
+				recipient_field = recipient_field.first()
+			}
+
+			var url = window.get_scrypto_config().lookup_url
+
+			var recipients = scrypto.get_recipient_ids(url, recipient_field.val())
+			recipients.push(window.get_scrypto_config().owner.local)
+
+			if (!recipients) {
+				console.log("no recipients specified: canceling send operation")
+				return false
+			}
+
+			console.log("recipients: " + recipients)
+
+			// this section doesn't make sense (need to generate keys, then encrypt each field in the form)
+			var message
+			if (!( message = scrypto.encrypt_text(recipients, plaintext, symmetric_key))) {
+				return false
+			} else {
+				$(this).val("[scrypto]" + Base64.encode(JSON.stringify(message)) + "[/scrypto]")
+			}
+
+			return true
+		})
+	}
+
 	$.fn.encrypt_text = function() {
 		if (window.get_scrypto_config().decryption_key === null) {
 			return true
@@ -303,7 +353,7 @@
 				// no symmetric key was specified; find public keys for recipients
 				var query
 				if (!( query = $("#" + window.get_scrypto_config().lookup_field).first().val())) {
-					// alert("symmetric key and lookup field unavailable: sending unencrypted")
+					// console.log("symmetric key and lookup field unavailable: sending unencrypted")
 					success = true
 				} else {
 					var url = window.get_scrypto_config().lookup_url
@@ -312,7 +362,7 @@
 					recipients.push(window.get_scrypto_config().owner)
 
 					if (!recipients) {
-						//alert("no recipients specified: canceling send operation")
+						//console.log("no recipients specified: canceling send operation")
 						success = false
 					}
 				}
@@ -321,7 +371,7 @@
 			if (success === undefined) {
 				var message
 				if (!( message = scrypto.encrypt_text(recipients, plaintext, symmetric_key))) {
-					//alert("keys unavailable for some recipients: sending unencrypted")
+					//console.log("keys unavailable for some recipients: sending unencrypted")
 					success = true
 				} else {
 					$(this).val("[scrypto]" + Base64.encode(JSON.stringify(message)) + "[/scrypto]")
@@ -329,14 +379,14 @@
 				}
 			}
 		} catch (e) {
-			alert(e)
+			console.log(e)
 			success = false
 		}
 
 		return success
 	}
 
-	$.fn.scrypto = function() {"use strict"
+	$.fn.scrypto = function() {
 		if (!(this instanceof $.fn.scrypto))
 			throw new Error("Constructor called as a function")
 
@@ -399,6 +449,40 @@
 
 			return keys
 		}
+
+		this.generate_encrypted_symmetric_key = function(recipient_ids) {
+			var encrypted_symmetric_key = {
+				'shared_key' : null,
+				'encrypted_recipient_keys' : { }
+			}
+
+			var public_keys = this.get_public_keys(recipient_ids)
+			if (!public_keys.complete) {
+				return false
+			} else {
+				delete public_keys.complete
+			}
+
+			var progress = sjcl.random.getProgress(10)
+			if (progress !== undefined && progress != 1) {
+				console.log("insufficient entropy")
+				return false
+			}
+
+			for (var id in public_keys) {
+				if (!public_keys.hasOwnProperty(id)) {
+					continue
+				}
+
+				if (encrypted_symmetric_key.shared_key === null) {
+					encrypted_symmetric_key.shared_key = public_keys[id].kem(10).key
+				}
+
+				encrypted_recipient_keys[id] = sjcl.encrypt(public_keys[id], JSON.stringify(encrypted_symmetric_key.shared_key))
+			}
+			
+			return encrypted_symmetric_key
+		}
 		/*
 		 * recipient_ids: a comma separated list of owner_ids (e.g., "7,11,3,4")
 		 * fields: an object mapping field name to field content (e.g., "{ 'body': 'some text', 'subject': 'a subject' }")
@@ -420,7 +504,7 @@
 
 				var progress = sjcl.random.getProgress(10)
 				if (progress !== undefined && progress != 1) {
-					alert("insufficient entropy")
+					console.log("insufficient entropy")
 					return false
 				}
 
