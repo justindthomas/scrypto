@@ -309,8 +309,8 @@
 
 			var url = window.get_scrypto_config().lookup_url
 
-			var recipients = scrypto.get_recipient_ids(url, recipient_field.val())
-			recipients.push(window.get_scrypto_config().owner.local)
+			var recipients = scrypto.get_recipient_ids(url, { 'local': recipient_field.val() })
+			recipients.push(window.get_scrypto_config().owner)
 
 			if (!recipients) {
 				console.log("no recipients specified: canceling send operation")
@@ -319,13 +319,16 @@
 
 			console.log("recipients: " + recipients)
 
-			// this section doesn't make sense (need to generate keys, then encrypt each field in the form)
-			var message
-			if (!( message = scrypto.encrypt_text(recipients, plaintext, symmetric_key))) {
-				return false
-			} else {
-				$(this).val("[scrypto]" + Base64.encode(JSON.stringify(message)) + "[/scrypto]")
-			}
+			var keys = scrypto.generate_encrypted_symmetric_key(recipients)
+			var secure_fields = $(this).find('[data-encrypt]')
+			
+			secure_fields.each( function() {
+				var plaintext = $(this).val()
+				var ciphertext = scrypto.encrypt_text(null, plaintext, keys.shared_key)
+				$(this).val("[scrypto]" + Base64.encode(JSON.stringify(ciphertext)) + "[/scrypto]")
+			})
+			
+			$(this).append("<input type='hidden' id='recipient_keys' name='recipient_keys' value='" + JSON.stringify(keys.encrypted_recipient_keys) + "' />")
 
 			return true
 		})
@@ -451,7 +454,7 @@
 		}
 
 		this.generate_encrypted_symmetric_key = function(recipient_ids) {
-			var encrypted_symmetric_key = {
+			var key_obj = {
 				'shared_key' : null,
 				'encrypted_recipient_keys' : { }
 			}
@@ -474,15 +477,16 @@
 					continue
 				}
 
-				if (encrypted_symmetric_key.shared_key === null) {
-					encrypted_symmetric_key.shared_key = public_keys[id].kem(10).key
+				if (key_obj.shared_key === null) {
+					key_obj.shared_key = public_keys[id].kem(10).key
 				}
 
-				encrypted_recipient_keys[id] = sjcl.encrypt(public_keys[id], JSON.stringify(encrypted_symmetric_key.shared_key))
+				key_obj.encrypted_recipient_keys[id] = sjcl.encrypt(public_keys[id], JSON.stringify(key_obj.shared_key))
 			}
 			
-			return encrypted_symmetric_key
+			return key_obj
 		}
+		
 		/*
 		 * recipient_ids: a comma separated list of owner_ids (e.g., "7,11,3,4")
 		 * fields: an object mapping field name to field content (e.g., "{ 'body': 'some text', 'subject': 'a subject' }")

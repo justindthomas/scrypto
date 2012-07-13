@@ -1,14 +1,13 @@
 = Scrypto
 
-To use this (still in heavy development and guaranteed mostly non-functional):
+This engine is still in heavy development and is guaranteed to be mostly non-functional. To see it in action, join my Diaspora* pod at http://ser.endipito.us.
 
-1. Specify it in your Gemfile.
-2. Mount it as 'mount Scrypto::Engine, :at => "/scrypto"' in your routes.rb.
-3. Add "//= require scrypto/scrypto" to your application.js.
-4. To add the key generator to a form, include a class of "scrypto-key-generator" on the form and a "div" within the form of class: "scrypto" to identify placement for the KeyRing fields.
-5. The generated form will include a "key_ring[owner_id]" tag and a "key_ring[owner_type]" be sure to set them to values that make sense for your application.
-6. Install (and execute) the necessary migrations with "rake scrypto:install:migrations" (or use "railties:install:migrations").
-7. To encrypt the fields in a form:
-	a. Specify "scrypto" as a class for the target form
-	b. Set an attribute of "data-scrypto-recipients" on the form with a string of comma-separated owner_ids
-	c. Specify "scrypto-encrypt" as a class for any input fields and textareas you want to encrypt
+Your use of this engine in your own project involves at least:
+
+1. Specifying "gem 'scrypto', :git => 'git@github.com:justindthomas/scypto'" in your Gemfile.
+2. Mounting the engine as "mount Scrypto::Engine, :at => '/scrypto'" in your routes.rb.
+3. Creating "scrypto-config.js" in an appropriate location following the expected syntax (currently evolving, to be formally documented in the future).
+4. Adding "//= require scrypto/scrypto" and "//= require scrypto-config.js" to your application.js.
+
+See the changes associated with the 'integrate-scrypto' branch of my Diaspora* branch for a current example of how to properly configure your application.
+
