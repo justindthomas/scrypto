@@ -5,7 +5,7 @@ class CreateScryptoKeyAssociations < ActiveRecord::Migration
       t.string :owner_type
       t.integer :entity_id
       t.string :entity_type
-      t.string :encrypted_key
+      t.text :encrypted_key
 
       t.timestamps
     end

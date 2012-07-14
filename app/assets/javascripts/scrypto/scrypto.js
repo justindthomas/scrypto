@@ -309,7 +309,7 @@
 
 			var url = window.get_scrypto_config().lookup_url
 
-			var recipients = scrypto.get_recipient_ids(url, { 'local': recipient_field.val() })
+			var recipients = scrypto.get_recipient_ids(url, recipient_field.val())
 			recipients.push(window.get_scrypto_config().owner)
 
 			if (!recipients) {
@@ -321,13 +321,26 @@
 
 			var keys = scrypto.generate_encrypted_symmetric_key(recipients)
 			var secure_fields = $(this).find('[data-encrypt]')
-			
-			secure_fields.each( function() {
-				var plaintext = $(this).val()
-				var ciphertext = scrypto.encrypt_text(null, plaintext, keys.shared_key)
-				$(this).val("[scrypto]" + Base64.encode(JSON.stringify(ciphertext)) + "[/scrypto]")
-			})
-			
+
+			try {
+				secure_fields.each(function() {
+					var encrypted_field = $(this).clone()
+
+					$(this).removeAttr('name')
+					$(this).removeAttr('id')
+
+					var plaintext = $(this).val()
+					var ciphertext = scrypto.encrypt_text(null, plaintext, keys.shared_key)
+
+					encrypted_field.val(JSON.stringify(ciphertext))
+					encrypted_field.hide()
+
+					$(this).parent().append(encrypted_field)
+				})
+			} catch (e) {
+				alert(e)
+			}
+
 			$(this).append("<input type='hidden' id='recipient_keys' name='recipient_keys' value='" + JSON.stringify(keys.encrypted_recipient_keys) + "' />")
 
 			return true
@@ -483,10 +496,9 @@
 
 				key_obj.encrypted_recipient_keys[id] = sjcl.encrypt(public_keys[id], JSON.stringify(key_obj.shared_key))
 			}
-			
+
 			return key_obj
 		}
-		
 		/*
 		 * recipient_ids: a comma separated list of owner_ids (e.g., "7,11,3,4")
 		 * fields: an object mapping field name to field content (e.g., "{ 'body': 'some text', 'subject': 'a subject' }")
