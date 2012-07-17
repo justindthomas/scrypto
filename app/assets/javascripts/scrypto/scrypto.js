@@ -294,6 +294,31 @@
 			}
 		})
 	}
+	
+	$.fn.encrypt_fields = function(headers) {
+		var scrypto = new $.fn.scrypto(headers)
+		
+		var ret
+		
+		this.each(function() {
+			var url = window.get_scrypto_config().lookup_url
+			var recipients = scrypto.get_recipient_ids(url, this.recipients)
+			recipients.push(window.get_scrypto_config().owner)
+			
+			delete this.recipients
+			
+			var keys = scrypto.generate_encrypted_symmetric_key(recipients)
+			
+			for(var field in this) {
+				var ciphertext = scrypto.encrypt_text(null, this[field], keys.shared_key)
+				this[field] = ciphertext.encrypted_text
+			}
+			
+			ret = { 'fields' : this, 'keys' : keys }
+		})
+		
+		return ret
+	}
 
 	$.fn.encrypt_form = function() {
 		var scrypto = new $.fn.scrypto
@@ -402,7 +427,7 @@
 		return success
 	}
 
-	$.fn.scrypto = function() {
+	$.fn.scrypto = function(headers) {
 		if (!(this instanceof $.fn.scrypto))
 			throw new Error("Constructor called as a function")
 
@@ -412,6 +437,7 @@
 			var recipient_ids = ""
 
 			$.ajax({
+				headers : headers,
 				url : lookup_url + query,
 				async : false,
 				dataType : "json",
@@ -548,6 +574,7 @@
 
 			$.ajax({
 				url : "/key_ring?person_ids=" + person_ids,
+				headers : headers,
 				async : false,
 				dataType : "json",
 				success : function(data) {
@@ -571,6 +598,7 @@
 
 			$.ajax({
 				url : window.get_scrypto_config().mount_point + "/public_keys.json?owner_ids=" + key_ring_ids,
+				headers : headers,
 				async : false,
 				dataType : "json",
 				success : function(keys) {
