@@ -294,29 +294,35 @@
 			}
 		})
 	}
-	
-	$.fn.encrypt_fields = function(headers) {
+
+	$.fn.encrypt_fields = function(headers, symmetric_key) {
 		var scrypto = new $.fn.scrypto(headers)
-		
+
 		var ret
-		
+
 		this.each(function() {
-			var url = window.get_scrypto_config().lookup_url
-			var recipients = scrypto.get_recipient_ids(url, this.recipients)
-			recipients.push(window.get_scrypto_config().owner)
-			
-			delete this.recipients
-			
-			var keys = scrypto.generate_encrypted_symmetric_key(recipients)
-			
-			for(var field in this) {
-				var ciphertext = scrypto.encrypt_text(null, this[field], keys.shared_key)
+			var keys
+			if (symmetric_key === undefined) {
+				var url = window.get_scrypto_config().lookup_url
+				var recipients = scrypto.get_recipient_ids(url, this.recipients)
+				recipients.push(window.get_scrypto_config().owner)
+				delete this.recipients
+
+				keys = scrypto.generate_encrypted_symmetric_key(recipients)
+			}
+
+			for (var field in this) {
+				var shared_key = (keys !== undefined) ? keys.shared_key : symmetric_key
+				var ciphertext = scrypto.encrypt_text(null, this[field], shared_key)
 				this[field] = ciphertext.encrypted_text
 			}
-			
-			ret = { 'fields' : this, 'keys' : keys }
+
+			ret = {
+				'fields' : this,
+				'keys' : keys
+			}
 		})
-		
+
 		return ret
 	}
 
@@ -433,6 +439,22 @@
 
 		var crypto = this
 
+		this.entropy = function(callback) {
+			var collect_entropy = function() {
+				var progress = sjcl.random.getProgress(10)
+
+				if (progress === undefined || progress == 1) {
+					sjcl.random.stopCollectors()
+					$(window).unbind('mousemove', collect_entropy)
+				} else {
+					callback(progress)
+				}
+			}
+
+			$(window).bind('mousemove', collect_entropy)
+			sjcl.random.startCollectors()
+		}
+
 		this.get_recipient_ids = function(lookup_url, query) {
 			var recipient_ids = ""
 
@@ -535,6 +557,7 @@
 			var encrypted_message = { }
 
 			if (!recipient_ids && (symmetric_key != null)) {
+				console.log("shared: " + symmetric_key)
 				shared_key = symmetric_key
 			} else {
 				var public_keys = this.get_public_keys(recipient_ids)
