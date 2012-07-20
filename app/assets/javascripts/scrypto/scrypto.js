@@ -4,7 +4,11 @@
 (function($) {
 	$(document).ready(function() {
 		if ( typeof window.get_scrypto_config === 'function') {
-			$(".scrypto-entropy").entropy()
+			$(".scrypto-entropy").html("Entropy: <span id='scrypto-entropy'>0%</span>")
+			$(document).entropy(function(progress) {
+				$('#scrypto-entropy').text((progress * 100).toFixed(0) + "%")
+			})
+			
 			$(".scrypto-passphrase").passphrase()
 			$(".scrypto-key-generator").key_generator()
 			$(".scrypto-key-fields").key_fields()
@@ -65,60 +69,11 @@
 		}
 	}
 
-	$.fn.entropy = function() {
-		var collect_entropy = function(event) {
-			var dependent_elements = event.data.elements
-
-			var progress = sjcl.random.getProgress(10)
-
-			if (progress === undefined || progress == 1) {
-				if (dependent_elements && dependent_elements.length > 0) {
-					for (var i = 0; i < dependent_elements.length; i++) {
-						$(dependent_elements[i]).show()
-					}
-				}
-
-				$(".scrypto-entropy").hide()
-				sjcl.random.stopCollectors()
-				$(window).unbind('mousemove', collect_entropy)
-			} else {
-				if (dependent_elements && dependent_elements.length > 0) {
-					for (var i = 0; i < dependent_elements.length; i++) {
-						$(dependent_elements[i]).hide()
-					}
-				}
-
-				var percentage = progress * 100;
-				$("#entropy").text(percentage.toFixed(0) + "%")
-			}
-		}
+	$.fn.entropy = function(callback) {
+		var scrypto = new $.fn.scrypto
 
 		this.each(function() {
-			// if key ring is required, check that configuration function is complete
-			var require_decryption_key = $(this).attr("data-require_decryption_key")
-			if (require_decryption_key && !window.get_scrypto_config().decryption_key) {
-				return
-			}
-
-			var existing_dk_nillable = $(this).attr("data-existing_dk_nillable")
-			if (existing_dk_nillable && (window.get_scrypto_config().decryption_key != null)) {
-				return
-			}
-
-			var dependent_elements
-			if (window.get_scrypto_config().entropy_dependent) {
-				dependent_elements = window.get_scrypto_config().entropy_dependent.split(",")
-
-				for (var i = 0; i < dependent_elements.length; i++) {
-					$(dependent_elements[i]).hide()
-				}
-			}
-
-			$(this).html("<span>Entropy: </span><span id='entropy'>0%</span>")
-			$(window).bind('mousemove', {
-				elements : dependent_elements
-			}, collect_entropy)
-			sjcl.random.startCollectors()
+			scrypto.entropy(callback)
 		})
 	}
 	var inject_generator = function(form, store_passphrase) {
