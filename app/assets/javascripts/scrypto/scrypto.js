@@ -8,7 +8,7 @@
 			$(document).entropy(function(progress) {
 				$('#scrypto-entropy').text((progress * 100).toFixed(0) + "%")
 			})
-			
+
 			$(".scrypto-passphrase").passphrase()
 			$(".scrypto-key-generator").key_generator()
 			$(".scrypto-key-fields").key_fields()
@@ -143,18 +143,20 @@
 		})
 	}
 
+	$.fn.store_passphrase = function(owner, passphrase) {
+		if (localStorage["scrypto-passphrases"] == null) {
+			var passphrases = {}
+			localStorage["scrypto-passphrases"] = JSON.stringify(passphrases)
+		}
+
+		var passphrases = JSON.parse(localStorage.getItem("scrypto-passphrases"))
+		passphrases[owner] = passphrase
+		localStorage["scrypto-passphrases"] = JSON.stringify(passphrases)
+	}
+
 	$.fn.passphrase = function() {
 		var update_passphrase = function() {
-			if (localStorage["scrypto-passphrases"] == null) {
-				var passphrases = {}
-				localStorage["scrypto-passphrases"] = JSON.stringify(passphrases)
-			}
-
-			var user = window.get_scrypto_config().owner.local
-			var passphrases = JSON.parse(localStorage.getItem("scrypto-passphrases"))
-			passphrases[user] = $("#scrypto-passphrase").val()
-
-			localStorage["scrypto-passphrases"] = JSON.stringify(passphrases)
+			$(document).store_passphrase(user, $("#scrypto-passphrase").val())
 			$('#store-passphrase').html("Local passphrase updated.")
 			$('#scrypto-passphrase').prop('disabled', true)
 		}
