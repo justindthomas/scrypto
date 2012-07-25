@@ -403,9 +403,9 @@
 				if (progress === undefined || progress == 1) {
 					sjcl.random.stopCollectors()
 					$(window).unbind('mousemove', collect_entropy)
-				} else {
-					callback(progress)
 				}
+				
+				if(progress !== undefined) callback(progress)
 			}
 
 			$(window).bind('mousemove', collect_entropy)
