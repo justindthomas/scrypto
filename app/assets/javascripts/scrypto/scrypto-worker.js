@@ -71,6 +71,11 @@ self.onmessage = function(e) {
 
 			data[i].conversation.last_timestamp = messages[k].timestamp
 			data[i].conversation.last_message = messages[k].text
+			
+			var attachments = messages[k].attachments
+			for(var l = 0; l < attachments.length; l++) {
+				attachments[l].name = sjcl.decrypt(JSON.parse(data[i].accessible_message_key), attachments[l].name)
+			}
 		}
 	}
 
