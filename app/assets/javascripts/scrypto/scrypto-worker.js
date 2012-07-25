@@ -55,12 +55,11 @@ self.onmessage = function(e) {
 	var decryption_key = decrypt_decryption_key(arguments.passphrase, Base64.decode(secured_decryption))
 	var data = arguments.conversations
 
-	for (var i = (data.length - 1); i >= 0; i--) {
+	for (var i = 0; i < data.length; i++) {
 		data[i].accessible_message_key = sjcl.decrypt(decryption_key, data[i].encrypted_key)
 		data[i].conversation.subject = sjcl.decrypt(JSON.parse(data[i].accessible_message_key), data[i].conversation.subject);
 
 		var messages = data[i].conversation.messages
-
 		for (var k = 0; k < messages.length; k++) {
 			messages[k].text = sjcl.decrypt(JSON.parse(data[i].accessible_message_key), messages[k].text)
 			messages[k].timestamp = getDate(new Date(messages[k].timestamp))
@@ -71,10 +70,9 @@ self.onmessage = function(e) {
 
 			data[i].conversation.last_timestamp = messages[k].timestamp
 			data[i].conversation.last_message = messages[k].text
-			
-			var attachments = messages[k].attachments
-			for(var l = 0; l < attachments.length; l++) {
-				attachments[l].name = sjcl.decrypt(JSON.parse(data[i].accessible_message_key), attachments[l].name)
+
+			for(var l = 0; l < messages[k].attachments.length; l++) {
+				messages[k].attachments[l].name = sjcl.decrypt(JSON.parse(data[i].accessible_message_key), messages[k].attachments[l].name)
 			}
 		}
 	}
