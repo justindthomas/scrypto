@@ -4,18 +4,16 @@
 (function($) {
 	$(document).ready(function() {
 		if ( typeof window.get_scrypto_config === 'function') {
-			$(".scrypto-entropy").html("Entropy: <span id='scrypto-entropy'>0%</span>")
-			$(document).entropy(function(progress) {
-				$('#scrypto-entropy').text((progress * 100).toFixed(0) + "%")
-			})
+			if ($('#scrypto-entropy').length > 0) {
+				$(document).entropy(function(progress) {
+					$('#scrypto-entropy').text((progress * 100).toFixed(0) + "%")
+				})
+			}
 
-			$(".scrypto-passphrase").passphrase()
-			$(".scrypto-key-generator").key_generator()
-			$(".scrypto-key-fields").key_fields()
+			$('#scrypto-key-fields').parents('form').inject_generator()
 
 			$(document).decrypt_all()
 
-			console.log('attaching')
 			$(document).on("submit", "form", function(event) {
 				var success = true
 				try {
@@ -76,70 +74,34 @@
 			scrypto.entropy(callback)
 		})
 	}
-	var inject_generator = function(form, store_passphrase) {
-		form.bind('submit', function(event) {
-			var progress = sjcl.random.getProgress(10)
 
-			if (progress !== undefined && progress != 1) {
-				console.log("insufficient entropy")
-				return false
-			}
+	$.fn.inject_generator = function() {
+		this.each(function() {
+			var form = $(this)
+			form.bind('submit', function(event) {
+				var progress = sjcl.random.getProgress(10)
 
-			if (!$("#scrypto-passphrase").val()) {
-				console.log("enter a passphrase")
-				return false
-			}
-
-			if (store_passphrase) {
-				if (localStorage["scrypto-passphrases"] == null) {
-					var passphrases = {}
-					localStorage["scrypto-passphrases"] = JSON.stringify(passphrases)
+				if (progress !== undefined && progress != 1) {
+					console.log("insufficient entropy")
+					return false
 				}
 
-				var user = window.get_scrypto_config().owner.local
-				var passphrases = JSON.parse(localStorage.getItem("scrypto-passphrases"))
-				passphrases[user] = $("#scrypto-passphrase").val()
+				if (!$("#scrypto-passphrase").val()) {
+					console.log("enter a passphrase")
+					return false
+				}
 
-				localStorage["scrypto-passphrases"] = JSON.stringify(passphrases)
-			}
+				var scrypto = new $.fn.scrypto
+				var k = scrypto.generate_keys()
+				k = scrypto.encrypt_keys($("#scrypto-passphrase").val(), k)
 
-			var scrypto = new $.fn.scrypto
-			var k = scrypto.generate_keys()
-			k = scrypto.encrypt_keys($("#scrypto-passphrase").val(), k)
+				$("#secured_decryption").val(Base64.encode(k.encryption.sec))
+				$("#encryption").val(Base64.encode(JSON.stringify(k.encryption.pub)))
+				$("#secured_signing").val(Base64.encode(k.signing.sec))
+				$("#verification").val(Base64.encode(JSON.stringify(k.signing.pub)))
 
-			$("#secured_decryption").val(Base64.encode(k.encryption.sec))
-			$("#encryption").val(Base64.encode(JSON.stringify(k.encryption.pub)))
-			$("#secured_signing").val(Base64.encode(k.signing.sec))
-			$("#verification").val(Base64.encode(JSON.stringify(k.signing.pub)))
-
-			return true
-		})
-	}
-
-	$.fn.key_fields = function() {
-		this.each(function() {
-			$(this).html("<input type='hidden' id='secured_decryption' name='key_ring[secured_decryption]' />" + "<input type='hidden' id='encryption' name='key_ring[encryption]' />" + "<input type='hidden' id='secured_signing' name='key_ring[secured_signing]' />" + "<input type='hidden' id='verification' name='key_ring[verification]' />")
-
-			var form = $(this).parents("form").first()
-			var store_passphrase = $(this).attr("data-store_passphrase")
-			inject_generator(form, store_passphrase)
-		})
-	}
-
-	$.fn.key_generator = function() {
-		this.each(function() {
-			var store_passphrase = $(this).attr("data-store_passphrase")
-
-			if (window.get_scrypto_config().decryption_key == null) {
-				var url = window.get_scrypto_config().mount_point + "/key_rings"
-				$(this).html("<form id='scrypto-key-generator' data-remote='true' method='post' action='" + url + "'>" + "<input type='hidden' id='secured_decryption' name='key_ring[secured_decryption]' />" + "<input type='hidden' id='encryption' name='key_ring[encryption]' />" + "<input type='hidden' id='secured_signing' name='key_ring[secured_signing]' />" + "<input type='hidden' id='verification' name='key_ring[verification]' />" + "<input type='submit' value='Create Keys' />" + "</form>")
-
-				var form = $("#scrypto-key-generator")
-				inject_generator(form, store_passphrase)
-			} else {
-				$(this).html("Key ring has been generated.")
-
-			}
+				return true
+			})
 		})
 	}
 
@@ -162,31 +124,7 @@
 		}
 
 		this.each(function() {
-			// if key ring is required, check that it exists
-			var require_decryption_key = $(this).attr("data-require_decryption_key")
-			if (require_decryption_key && !window.get_scrypto_config().decryption_key) {
-				return
-			}
-
-			var existing_dk_nillable = $(this).attr("data-existing_dk_nillable")
-			if (existing_dk_nillable && (window.get_scrypto_config().decryption_key != null)) {
-				return
-			}
-
-			var hidden = $(this).attr("data-hidden")
-			if (hidden) {
-				$(this).hide()
-			}
-
-			var html = "<label for='scrypto-passphrase'>Passphrase</label><input id='scrypto-passphrase' type='password' />"
-
-			var store_passphrase = $(this).attr("data-store_passphrase")
-			if (!hidden && store_passphrase && (window.get_scrypto_config().decryption_key != null)) {
-				html = html + "<span id='store-passphrase'><a href='#'>Update Local Passphrase</a></span>"
-			}
-
-			$(this).html(html)
-			$('#store-passphrase a').on('click', update_passphrase)
+			$('#passphrase-action a').on('click', update_passphrase)
 
 			var owner = window.get_scrypto_config().owner
 			if (owner) {
@@ -404,8 +342,9 @@
 					sjcl.random.stopCollectors()
 					$(window).unbind('mousemove', collect_entropy)
 				}
-				
-				if(progress !== undefined) callback(progress)
+
+				if (progress !== undefined)
+					callback(progress)
 			}
 
 			$(window).bind('mousemove', collect_entropy)
