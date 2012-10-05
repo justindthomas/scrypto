@@ -4,12 +4,6 @@
 (function($) {
 	$(document).ready(function() {
 		if ( typeof window.get_scrypto_config === 'function') {
-			if ($('#scrypto-entropy').length > 0) {
-				$(document).entropy(function(progress) {
-					$('#scrypto-entropy').text((progress * 100).toFixed(0) + "%")
-				})
-			}
-
 			$('#scrypto-key-fields').parents('form').inject_generator()
 
 			$(document).decrypt_all()
@@ -124,7 +118,7 @@
 		}
 
 		this.each(function() {
-			$('#passphrase-action a').on('click', update_passphrase)
+			$('#store-passphrase a').on('click', update_passphrase)
 
 			var owner = window.get_scrypto_config().owner
 			if (owner) {
