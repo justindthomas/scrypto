@@ -1,8 +1,10 @@
 = Scrypto
 
-This engine is still in heavy development and is guaranteed to be mostly non-functional. To see it in action, join my Diaspora* pod at http://ser.endipito.us.
+*UPDATE:* I finally came to the stubborn acceptance a year or so ago that this is a bit of a boondoggle. It's definitely a curiousity in what can be done within a browser, but nothing delivered as JavaScript from an untrustworthy server can be considered secure, and there is currently no consistent mechanism in any browser (that I'm aware of) for validating code delivered to the browser. Perhaps browser extensions could be written to provide that functionality, but having to install a separate software package is inconsistent with my original hopes.
 
-Your use of this engine in your own project involves at least:
+I'll keep the code here for my reference, but I advise against using or building on it.
+
+Your use of this engine in a project involves at least:
 
 1. Specifying "gem 'scrypto', :git => 'git@github.com:justindthomas/scypto'" in your Gemfile.
 2. Mounting the engine as "mount Scrypto::Engine, :at => '/scrypto'" in your routes.rb.
