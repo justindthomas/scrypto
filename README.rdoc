@@ -1,6 +1,6 @@
 = Scrypto
 
-*UPDATE:* I finally came to the stubborn acceptance a year or so ago that this is a bit of a boondoggle. It's definitely a curiousity in what can be done within a browser, but nothing delivered as JavaScript from an untrustworthy server can be considered secure, and there is currently no consistent mechanism in any browser (that I'm aware of) for validating code delivered to the browser. Perhaps browser extensions could be written to provide that functionality, but having to install a separate software package is inconsistent with my original hopes.
+*UPDATE:* I finally came to the stubborn acceptance a year or so ago that this is a bit of a boondoggle. It's interesting to show what can be done within a browser, but nothing delivered as JavaScript from an untrustworthy server can be considered secure, and there is currently no consistent mechanism in any browser (that I'm aware of) for validating code delivered to the browser. Perhaps browser extensions could be written to provide that functionality, but having to install a separate software package is inconsistent with my original goals.
 
 I'll keep the code here for my reference, but I advise against using or building on it.
 
